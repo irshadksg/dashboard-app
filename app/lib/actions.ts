@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
 
+import { signIn } from "@/auth";
+import { AuthError } from "next-auth";
+
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 const FormSchema = z.object({
@@ -39,8 +42,6 @@ export async function createInvoice(prevState: State, formData: FormData) {
     amount: formData.get("amount"),
     status: formData.get("status"),
   });
-
-  console.log("validation :: ", validatedFields);
 
   // If form validation fails, return errors early. Otherwise, continue.
   if (!validatedFields.success) {
@@ -118,4 +119,24 @@ export async function deleteInvoice(
 ) {
   await sql`DELETE FROM invoices WHERE id = ${id}`;
   revalidatePath("/dashboard/invoices");
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData
+) {
+  try {
+    console.log("User form data ::", formData);
+    await signIn("credentials", formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return "Invalid credentials.";
+        default:
+          return "Something went wrong.";
+      }
+    }
+    throw error;
+  }
 }
