@@ -111,7 +111,11 @@ export async function updateInvoice(
 }
 
 // DELETE INVOICE
-export async function deleteInvoice(id: string) {
+export async function deleteInvoice(
+  id: string,
+  prevState: any,
+  formData: FormData
+) {
   await sql`DELETE FROM invoices WHERE id = ${id}`;
   revalidatePath("/dashboard/invoices");
 }
